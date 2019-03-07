@@ -1,0 +1,7 @@
+[package]
+name = "tc-log-parser"
+lean_version = "3.4.2"
+version = "0.1"
+
+[dependencies]
+mathlib = { path = "/home/hoelzl/Projects/mathlib" }

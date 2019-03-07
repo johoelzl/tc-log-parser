@@ -11,7 +11,8 @@ parameters {α : Type} [fintype α] [discrete_field α] (n : ℕ) (A : finset (f
 parameter B : matrix {x // x ∈ A} {x // x ∈ A} α
 
 set_option trace.class_instances true
-set_option trace.type_context.tmp_vars  true
+-- set_option trace.type_context.tmp_vars  true
+set_option pp.proofs true
 #check rank B.to_lin
 
 end
