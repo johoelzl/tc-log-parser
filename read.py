@@ -16,21 +16,23 @@ mvar_regex = re.compile(r"\?x_(\d+)")
 class Parser:
   def parse(self, f):
     p = ""
-    for l in f.readlines():
-      if l:
-        if l.startswith("  "):
-          p += " " + l.strip()
-        else:
-          if p != '':
-            self.parse_paragraph(p)
-          p = l.strip()
-      else:
-        p = l.strip()
+    p_n = 1
+    for (n, l) in enumerate(f.readlines()):
+      if l.startswith("  "):
+        p += " " + l.strip()
+        continue
+
+      if p != '':
+        self.parse_paragraph(p_n, p)
+
+      p = l.strip()
+      p_n = n + 1
+
     if p != '':
-      self.parse_paragraph(p)
+      self.parse_paragraph(p_n, p)
     self.finished()
 
-  def parse_paragraph(self, p):
+  def parse_paragraph(self, l, p):
     m = log_regex.fullmatch(p)
     if not m:
       print("Unkown log message:", repr(p))
@@ -38,223 +40,260 @@ class Parser:
 
     d = m.groupdict()
     if d['depth']:
-      self.apply_instance(int(d["depth"]), int(d["mvar"]), d["locals"].split(),
+      self.apply_instance(l,
+        int(d["depth"]), int(d["mvar"]), d["locals"].split(),
         d["type"].strip(), d["val"].strip())
     elif d["cmd1"] == "assign":
-      self.assign(int(d["mvar2"]), d["val2"].strip())
+      self.assign(l, int(d["mvar2"]), d["val2"].strip())
     elif d["cmd1"] == "unassign":
-      self.unassign(int(d["mvar2"]), d["val2"].strip())
+      self.unassign(l, int(d["mvar2"]), d["val2"].strip())
     elif d["cmd2"] == "push_scope":
-      self.push_scope(int(d["sz"]))
+      self.push_scope(l, int(d["sz"]))
     elif d["cmd2"] == "pop_scope":
-      self.pop_scope(int(d["sz"]))
+      self.pop_scope(l, int(d["sz"]))
     elif d["fail"]:
-      self.apply_failed()
+      self.apply_failed(l)
 
   def finished(self):
     pass
 
-  def apply_instance(self, depth, mvar, locals, type, val):
+  def apply_instance(self, line, depth, mvar, locals, type, val):
     pass
 
-  def apply_failed(self):
+  def apply_failed(self, line):
     pass
 
-  def assign(self, mvar, val):
+  def assign(self, line, mvar, val):
     pass
 
-  def unassign(self, mvar, val):
+  def unassign(self, line, mvar, val):
     pass
 
-  def push_scope(self, sz):
+  def push_scope(self, line, sz):
     pass
 
-  def pop_scope(self, sz):
+  def pop_scope(self, line, sz):
     pass
+
+class MetaVariable:
+  active_mvars = dict()
+
+  def __init__(self, parent, idx):
+    self.parent = parent
+    self.idx = idx
+
+    self.type = None
+    self.depth = None
+    self.locals = None
+
+    self.active_instance = None
+    self.active_run = None
+    self.runs = []
+
+  def set(self, instance):
+    if not self.active_run:
+      self.active_run = []
+      self.runs.append((self.active_run, None))
+    self.active_run.append(instance)
+
+    self.active_instance = instance
+
+    if self.depth is None:
+      self.depth = instance.depth
+    else:
+      assert(self.depth == instance.depth)
+    if self.type is None:
+      self.type = instance.type
+    else:
+      assert(self.type == instance.type)
+    if self.locals is None:
+      self.locals = instance.locals
+    else:
+      assert(self.locals == instance.locals)
+
+  def backtrack(self, i):
+    self.deactivate_instance(Backtracking(i))
+    if self.runs:
+      self.runs[-1] = (self.runs[-1][0], i)
+    self.active_run = None
+
+  def deactivate_instance(self, reason):
+    if self.active_instance:
+      self.active_instance.deactivate(reason)
+      self.active_instance = None
+
+  def deactivate(self, reason):
+    self.deactivate_instance(reason)
+    del MetaVariable.active_mvars[self.idx]
+
+  def activate(self):
+    assert(self.idx not in MetaVariable.active_mvars)
+    MetaVariable.active_mvars[self.idx] = self
+
+  def non_failed_runs(self):
+    for (l, r) in self.runs:
+      pass
+
+  def print_tree(self, prefix="", depth=3):
+    for (l, r) in self.runs:
+      failed = True
+      for i in l:
+        if not (i.failure_reason and i.failure_reason.is_def_eq()):
+          i.print_tree(prefix, depth)
+          failed = False
+      if failed:
+        if l:
+          line = l[0].line
+        else:
+          line = 0
+        print("%6i: %s failed or empty run in %s" % (line, prefix, self.idx))
+      if r is not None:
+        print("%6i: %s backtracking %s by %s" % (r.line, prefix, self.idx, r))
+
+  def __str__(self):
+    if self.type:
+      return "[?x_%i : %s]" % (self.idx, self.type)
+    else:
+      return "?x_%i" % self.idx
+
+  def collect(self, instantiations):
+    for (l, r) in self.runs:
+      for i in l:
+        i.collect(instantiations)
+
+MetaVariable.active_mvars[0] = MetaVariable(None, 0)
+
+class Failure:
+  def is_def_eq(self):
+    return False
+
+class DefEqFailure(Failure):
+  def __init__(self, line):
+    self.line = line
+
+  def is_def_eq(self):
+    return True
+
+  def __str__(self):
+    return "DefEq@%i" % self.line
+
+class Replacement(Failure):
+  def __init__(self, i):
+    self.instance = i
+
+  def __str__(self):
+    return "Replacement " + str(self.instance)
+
+class Backtracking(Failure):
+  def __init__(self, i):
+    self.instance = i
+
+  def __str__(self):
+    return "Backtracking " + str(self.instance)
 
 class Instantiation:
-  def __init__(self, time, target, value, mvars):
-    self.time = time
+  def __init__(self, line, depth, target, locals, type, value):
+    self.line = line
     self.target = target
+    self.depth = depth
+    self.locals = locals
+    self.type = type
     self.value = value
-    self.mvars = mvars
 
-    self.cost = None
+    self.failure_reason = None
 
     const_name = self.value.split()[0]
     if const_name.startswith("@"):
       const_name = const_name[1:]
     self.const_name = const_name
 
-  def compute_cost(self):
-    if self.cost is not None:
-      return self.cost
+    self.mvars = [MetaVariable(self, int (i))
+      for i in mvar_regex.findall(self.value)]
 
-    cost = 1
+  def activate(self):
+    self.target.set(self)
     for m in self.mvars:
-      cost += m.compute_cost()
-    self.cost = cost
-    return cost
+      m.activate()
 
-class MetaVariable:
-  all = []
-  active = collections.OrderedDict()
-  scopes = []
+  def deactivate(self, reason):
+    self.failure_reason = reason
+    for m in self.mvars:
+      m.deactivate(reason)
 
-  def __init__(self, number, parent):
-    self.number = number
-    self.parent = parent
-    self.type = None
-    self.depth = None
-    self.locals = None
+  def collect(self, instantiations):
+    if self.failure_reason and self.failure_reason.is_def_eq():
+      return
 
-    self.instantiations = []
-    self.failures = []
+    i = instantiations.setdefault(self.const_name, 0)
+    instantiations[self.const_name] = i + 1
 
-    self.cost = None
+    for m in self.mvars:
+      m.collect(instantiations)
 
-    assert(not self.parent or number > self.parent.number)
+  def print_tree(self, prefix="", depth=3):
+    print("%6i: %s ?x_%i := %s %s" %
+      (self.line, prefix, self.target.idx, self.const_name,
+        ", ".join([str(m) for m in self.mvars])))
 
-    assert(number not in MetaVariable.active)
-    MetaVariable.active[number] = self
-    MetaVariable.all.append(self)
+    if depth == 0: return
+    for m in self.mvars:
+      m.print_tree(prefix + "  ", depth - 1)
 
-  def add_instance(self, time, depth, locals, type, value):
-    if self.depth is None:
-      self.depth = depth
-    else:
-      assert(self.depth == depth)
-    if self.type is None:
-      self.type = type
-    else:
-      assert(self.type == type)
-    if self.locals is None:
-      self.locals = locals
-    else:
-      assert(self.type == type)
-
-    found = None
-    for (n, (i, mvars)) in enumerate(MetaVariable.scopes):
-      if i.number == self.number:
-        found = n
-
-    if found is not None:
-      while len(MetaVariable.scopes) > found:
-        self.pop_scope()
-
-    mvars = [MetaVariable(int(s), self) for s in mvar_regex.findall(value)]
-    self.instantiations.append(Instantiation(time, self, value, mvars))
-
-    MetaVariable.scopes.append((self, mvars))
-
-  def last_instance_failed(self):
-    self.failures.append(self.instantiations.pop())
-    self.pop_scope()
-
-  def pop_scope(self):
-    (n, mvars) = MetaVariable.scopes.pop()
-    for m in mvars:
-      del MetaVariable.active[m.number]
-
-  def __repr__(self):
-    if self.type is None:
-      return "?x_%i" % self.number
-    else:
-      return "?x_%i : %s" % (self.number, self.type)
-
-  def print_instantiations(self, prefix="", costs = [100, 60, 30, 20, 10, 10, 5]):
-    next_costs = costs[1:]
-    for i in self.instantiations:
-      if i.compute_cost() < costs[0]:
-        continue
-
-      print("%4i%s ?x_%i [%4i] := %s" % (i.time, prefix, self.number, i.compute_cost(), i.value))
-
-      if next_costs:
-        for m in i.mvars:
-          m.print_instantiations(prefix + "  ", next_costs)
-
-  def compute_cost(self):
-    if self.cost is not None:
-      return self.cost
-
-    cost = 0
-    for i in self.instantiations:
-      cost += i.compute_cost()
-
-    self.cost = cost
-    return cost
+  def __str__(self):
+    return "?x_%i := %s (%s)" % (self.target.idx, self.const_name, self.failure_reason)
 
 class ContextParser(Parser):
   def __init__(self):
-    self.apply_cnt = 0
-    self.root = MetaVariable(0, None)
-    self.last_mvar = self.root
+    self.last_instance = None
 
-  def push_scope(self, sz):
-    pass # self.scope = Scope(self.scope)
+  def apply_instance(self, ln, d, m, l, t, v):
+    m = MetaVariable.active_mvars[m]
+    i = Instantiation(ln, d, m, l, t, v)
+    self.last_instance = i
 
-  def pop_scope(self, sz):
-    pass # self.scope = self.scope.parent
+    # add backtracking information
+    if m.active_instance:
+      m.deactivate_instance(Replacement(i))
+      while m.parent:
+        parent = m.parent
+        pos = parent.mvars.index(m)
+        for sibling in parent.mvars[pos + 1:]:
+          sibling.backtrack(i)
+        m = parent.target
 
-  def assign(self, mvar, val):
-    pass # self.scope.mvars[mvar] = val
+    # add active mvars
+    i.activate()
 
-  def unassign(self, mvar, val):
-    pass
-    # if mvar in self.scope.mvars:
-    #   del self.scope.mvars[mvar]
-    # else:
-    #   print("cannot unnassign %i" % mvar)
+  def apply_failed(self, ln):
+    self.last_instance.target.deactivate_instance(DefEqFailure(ln))
+    self.last_instance = None
 
-  def apply_instance(self, d, m, l, t, v):
-    self.apply_cnt += 1
-    self.last_mvar = MetaVariable.active[int(m)]
-    self.last_mvar.add_instance(self.apply_cnt, d, l, t, v)
+def read(name):
+  f = open(name)
+  p = ContextParser()
+  p.parse(f)
+  return p
 
-    # self.scope.applies.append(Instance(self.scope, self.apply_cnt, d, m, l, t, v))
-
-  def apply_failed(self):
-    self.apply_cnt -= 1
-    self.last_mvar.last_instance_failed()
-
-  def finished(self):
-    self.root.compute_cost()
-
-if len(sys.argv) > 1:
-  name = sys.argv[1]
-else:
-  name = "WRONG"
-
-f = open(name)
-p = ContextParser()
-p.parse(f)
-
-def print_scope():
-  print("scope:")
-  for (m, mvars) in MetaVariable.scopes:
-    m.print_instantiations(costs=[1000])
-  print()
-
-def print_116():
-  print("?x_116")
-  m = MetaVariable.active[116]
-  m.print_instantiations()
+def print_tree(depth=4):
+  print("tree:")
+  m = MetaVariable.active_mvars[0]
+  m.print_tree(depth = depth)
   print()
 
 def instantiation_histogram():
   d = dict()
-  for m in MetaVariable.all:
-    for i in m.instantiations:
-      d.setdefault(i.const_name, []).append(i.compute_cost())
+  MetaVariable.active_mvars[116].collect(d)
+  i = list(d.items())
+  i.sort(key = lambda p: p[1])
+  for (n, c) in i:
+    print ("%5i  %s" % (c, n))
 
-  s = list(d.items())
-  s.sort(key=lambda t: len(t[1]))
-  for (n, l) in s:
-    print(n, "  ", len(l), "  ", sum(l))
+if __name__ == "__main__":
+  if len(sys.argv) > 1:
+    name = sys.argv[1]
+  else:
+    name = "WRONG"
+  p = read(name)
 
-print_scope()
-# print_116()
-# instantiation_histogram()
-
-
+  # print_tree()
+  instantiation_histogram()
