@@ -236,6 +236,8 @@ class Backtracking(Failure):
     return "Backtracking " + str(self.instance)
 
 class Instantiation:
+  all = []
+
   def __init__(self, line, depth, target, locals, type, value):
     self.line = line
     self.target = target
@@ -255,6 +257,9 @@ class Instantiation:
 
     self.mvars = [MetaVariable(self, int (i))
       for i in mvar_regex.findall(self.value)]
+
+    Instantiation.all.append(self)
+    self.invalidating_vars = None
 
   def activate(self):
     self.target.set(self)
@@ -292,6 +297,14 @@ class Instantiation:
     for m in self.mvars:
       m.print_tree(prefix + "  ", depth - 1)
 
+  def print_instance(self):
+    if self.success:
+      s = "✓"
+    else:
+      s = "🗲"
+    print("%s %s := %s %s" %
+      (self.target.get_name(), s, self.const_name, ", ".join([m.get_name() for m in self.mvars])))
+
   def __str__(self):
     return "?x_%i := %s (%s)" % (self.target.idx, self.const_name, self.failure_reason)
 
@@ -308,16 +321,18 @@ class ContextParser(Parser):
     # add backtracking information
     if m.active_instance:
       m.deactivate_instance(Replacement(i))
-      backtracked = False
+      backtracked = []
       while m.parent:
         parent = m.parent
         pos = parent.mvars.index(m)
         for sibling in parent.mvars[pos + 1:]:
+          if sibling.active_run:
+            backtracked.append(sibling)
           sibling.backtrack(i)
-          backtracked = True
         m = parent.target
       if backtracked:
         self.backtrack_count += 1
+        i.invalidating_vars = backtracked
 
     if m.parent:
       for v in m.parent.mvars:
@@ -351,6 +366,19 @@ def instantiation_histogram():
   for (n, c) in i:
     print ("%5i  %s" % (c, n))
 
+def print_path(m):
+  print("Meta Variable: %s" % m.get_name())
+  while m:
+    i = m.parent
+    if i is None: break
+    i.print_instance()
+    m = i.target
+
+def all_mvars():
+  for l in MetaVariable.all.values():
+    for m in l:
+      yield m
+
 if __name__ == "__main__":
   if len(sys.argv) > 1:
     name = sys.argv[1]
@@ -359,5 +387,12 @@ if __name__ == "__main__":
   p = read(name)
 
   print("backtrack count: ", p.backtrack_count)
-  print_tree()
+  # print_tree()
   # instantiation_histogram()
+
+  max_depth = 0
+  for l in MetaVariable.all.values():
+    for m in l:
+      if m.depth is not None:
+        max_depth = max(max_depth, m.depth)
+  print("max_depth: ", max_depth)
