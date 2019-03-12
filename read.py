@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import re
-import collections
+from collections import OrderedDict
 import sys
 
 log_regex = re.compile(r"""
@@ -77,6 +77,7 @@ class Parser:
 
 class MetaVariable:
   active_mvars = dict()
+  all = OrderedDict()
 
   def __init__(self, parent, idx):
     self.parent = parent
@@ -89,6 +90,10 @@ class MetaVariable:
     self.active_instance = None
     self.active_run = None
     self.runs = []
+
+    generations = MetaVariable.all.setdefault(self.idx, [])
+    generations.append(self)
+    self.generation = len(generations)
 
   def set(self, instance):
     if not self.active_run:
@@ -151,10 +156,14 @@ class MetaVariable:
         print("%6i: %s backtracking %s by %s" % (r.line, prefix, self.idx, r))
 
   def __str__(self):
-    if self.type:
-      return "[?x_%i : %s]" % (self.idx, self.type)
+    if self.generation == 0:
+      name = "?x_%i" % sefl.idx
     else:
-      return "?x_%i" % self.idx
+      name = "?x_%i.i" % (sefl.idx, self.generation)
+    if self.type:
+      return "[%s : %s]" % (name, self.type)
+    else:
+      return name
 
   def collect(self, instantiations):
     for (l, r) in self.runs:
