@@ -167,7 +167,7 @@ class ContextParser(Parser):
   def __init__(self):
     self.instances = OrderedDict()
     self.vars = { 0: MetaVariable(None, 0) }
-    self.backtrack_count = 0
+    self.backtrack_histogram = {}
 
   def pop_instance(self):
     elem = self.instances.popitem()
@@ -183,8 +183,11 @@ class ContextParser(Parser):
       assert(target.parent.target.idx in self.instances)
 
     if target.idx in self.instances:
-      self.backtrack_count += 1
-      while self.pop_instance()[0] != target.idx: pass
+      backsteps = 0
+      while self.pop_instance()[0] != target.idx:
+        backsteps += 1
+      cnt = self.backtrack_histogram.setdefault(backsteps, 0)
+      self.backtrack_histogram[backsteps] = cnt + 1
 
     target.set(new_instance)
 
@@ -208,4 +211,6 @@ if __name__ == "__main__":
     name = "WRONG2"
   p = read(name)
 
-  print("backtrack count:", p.backtrack_count)
+  i = list(p.backtrack_histogram.items())
+  i.sort(key = lambda p: p[0])
+  print("backtrack count:", i)
