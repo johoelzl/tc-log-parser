@@ -101,8 +101,7 @@ class Parser:
     pass
 
 class MetaVariable:
-  active_mvars = dict()
-  all = OrderedDict()
+  all = {}
 
   def __init__(self, parent, idx):
     self.parent = parent
@@ -112,26 +111,11 @@ class MetaVariable:
     self.depth = None
     self.locals = None
 
-    self.active_instance = None
-    self.active_run = None
-    self.runs = []
-
-    if self.idx in MetaVariable.all:
-      l = MetaVariable.all[self.idx]
-      self.generation = len(l)
-      l.append(self)
-    else:
-      MetaVariable.all[self.idx] = [self]
-      self.generation = 0
+    l = MetaVariable.all.setdefault(self.idx, [])
+    self.generation = len(l)
+    l.append(self)
 
   def set(self, instance):
-    if not self.active_run:
-      self.active_run = []
-      self.runs.append((self.active_run, None))
-    self.active_run.append(instance)
-
-    self.active_instance = instance
-
     if self.depth is None:
       self.depth = instance.depth
     else:
@@ -145,49 +129,6 @@ class MetaVariable:
     else:
       assert(self.locals == instance.locals)
 
-  def backtrack(self, i):
-    self.deactivate_instance(Backtracking(i))
-    if self.runs:
-      self.runs[-1] = (self.runs[-1][0], i)
-    self.active_run = None
-
-  def deactivate_instance(self, reason):
-    if self.active_instance:
-      self.active_instance.deactivate(reason)
-      self.active_instance = None
-
-  def deactivate(self, reason):
-    self.deactivate_instance(reason)
-    del MetaVariable.active_mvars[self.idx]
-
-  def activate(self):
-    assert(self.idx not in MetaVariable.active_mvars)
-    MetaVariable.active_mvars[self.idx] = self
-
-  def mark_success(self):
-    if self.active_instance:
-      self.active_instance.mark_success()
-
-  def non_failed_runs(self):
-    for (l, r) in self.runs:
-      pass
-
-  def print_tree(self, prefix="", depth=3):
-    for (l, r) in self.runs:
-      failed = True
-      for i in l:
-        if not (i.failure_reason and i.failure_reason.is_def_eq()):
-          i.print_tree(prefix, depth)
-          failed = False
-      if failed:
-        if l:
-          line = l[0].line
-        else:
-          line = 0
-        print("%6i: %s failed or empty run in %s" % (line, prefix, self.idx))
-      if r is not None:
-        print("%6i: %s backtracking %s by %s" % (r.line, prefix, self.idx, r))
-
   def get_name(self):
     if self.generation == 0:
       return "?x_%i" % self.idx
@@ -200,44 +141,7 @@ class MetaVariable:
     else:
       return self.get_name()
 
-  def collect(self, instantiations):
-    for (l, r) in self.runs:
-      for i in l:
-        i.collect(instantiations)
-
-MetaVariable.active_mvars[0] = MetaVariable(None, 0)
-
-class Failure:
-  def is_def_eq(self):
-    return False
-
-class DefEqFailure(Failure):
-  def __init__(self, line):
-    self.line = line
-
-  def is_def_eq(self):
-    return True
-
-  def __str__(self):
-    return "DefEq@%i" % self.line
-
-class Replacement(Failure):
-  def __init__(self, i):
-    self.instance = i
-
-  def __str__(self):
-    return "Replacement " + str(self.instance)
-
-class Backtracking(Failure):
-  def __init__(self, i):
-    self.instance = i
-
-  def __str__(self):
-    return "Backtracking " + str(self.instance)
-
 class Instantiation:
-  all = []
-
   def __init__(self, line, depth, target, locals, type, value):
     self.line = line
     self.target = target
@@ -246,9 +150,7 @@ class Instantiation:
     self.type = type
     self.value = value
 
-    self.success = False
-
-    self.failure_reason = None
+    self.def_eq_failure = False
 
     const_name = self.value.split()[0]
     if const_name.startswith("@"):
@@ -258,126 +160,46 @@ class Instantiation:
     self.mvars = [MetaVariable(self, int (i))
       for i in mvar_regex.findall(self.value)]
 
-    Instantiation.all.append(self)
-    self.invalidating_vars = None
-
-  def activate(self):
-    self.target.set(self)
-    for m in self.mvars:
-      m.activate()
-
-  def deactivate(self, reason):
-    self.failure_reason = reason
-    for m in self.mvars:
-      m.deactivate(reason)
-
-  def mark_success(self):
-    if self.success: return
-
-    self.success = True
-    for v in self.mvars:
-      v.mark_success()
-
-  def collect(self, instantiations):
-    if self.failure_reason and self.failure_reason.is_def_eq():
-      return
-
-    i = instantiations.setdefault(self.const_name, 0)
-    instantiations[self.const_name] = i + 1
-
-    for m in self.mvars:
-      m.collect(instantiations)
-
-  def print_tree(self, prefix="", depth=3):
-    print("%6i: %s ?x_%i := %s %s" %
-      (self.line, prefix, self.target.idx, self.const_name,
-        ", ".join([str(m) for m in self.mvars])))
-
-    if depth == 0: return
-    for m in self.mvars:
-      m.print_tree(prefix + "  ", depth - 1)
-
-  def print_instance(self):
-    if self.success:
-      s = "✓"
-    else:
-      s = "🗲"
-    print("%s %s := %s %s" %
-      (self.target.get_name(), s, self.const_name, ", ".join([m.get_name() for m in self.mvars])))
-
   def __str__(self):
-    return "?x_%i := %s (%s)" % (self.target.idx, self.const_name, self.failure_reason)
+    return "?x_%i := %s" % (self.target.get_name(), self.const_name)
 
 class ContextParser(Parser):
   def __init__(self):
-    self.last_instance = None
+    self.instances = OrderedDict()
+    self.vars = { 0: MetaVariable(None, 0) }
     self.backtrack_count = 0
 
+  def pop_instance(self):
+    elem = self.instances.popitem()
+    for m in elem[1].mvars:
+      del self.vars[m.idx]
+    return elem
+
   def apply_instance(self, ln, d, m, l, t, v):
-    m = MetaVariable.active_mvars[m]
-    i = Instantiation(ln, d, m, l, t, v)
-    self.last_instance = i
+    target = self.vars[m]
+    new_instance = Instantiation(ln, d, target, l, t, v)
 
-    # add backtracking information
-    if m.active_instance:
-      m.deactivate_instance(Replacement(i))
-      backtracked = []
-      while m.parent:
-        parent = m.parent
-        pos = parent.mvars.index(m)
-        for sibling in parent.mvars[pos + 1:]:
-          if sibling.active_run:
-            backtracked.append(sibling)
-          sibling.backtrack(i)
-        m = parent.target
-      if backtracked:
-        self.backtrack_count += 1
-        i.invalidating_vars = backtracked
+    if target.parent:
+      assert(target.parent.target.idx in self.instances)
 
-    if m.parent:
-      for v in m.parent.mvars:
-        if v == m: break
-        v.mark_success()
+    if target.idx in self.instances:
+      self.backtrack_count += 1
+      while self.pop_instance()[0] != target.idx: pass
 
-    # add active mvars
-    i.activate()
+    target.set(new_instance)
+
+    self.instances[target.idx] = new_instance
+    for m in new_instance.mvars:
+      self.vars[m.idx] = m
 
   def apply_failed(self, ln):
-    self.last_instance.target.deactivate_instance(DefEqFailure(ln))
-    self.last_instance = None
+    self.pop_instance()[1].def_eq_failure = True
 
 def read(name):
   f = open(name)
   p = ContextParser()
   p.parse(f)
   return p
-
-def print_tree(depth=4):
-  print("tree:")
-  m = MetaVariable.active_mvars[0]
-  m.print_tree(depth = depth)
-  print()
-
-def instantiation_histogram():
-  d = dict()
-  MetaVariable.active_mvars[116].collect(d)
-  i = list(d.items())
-  i.sort(key = lambda p: p[1])
-  for (n, c) in i:
-    print ("%5i  %s" % (c, n))
-
-def print_path(m):
-  print("Meta Variable: %s" % m.get_name())
-  while m:
-    i = m.parent
-    if i is None: break
-    i.print_instance()
-    m = i.target
-
-def all_mvars():
-  for l in MetaVariable.all.values():
-    for m in l:
-      yield m
 
 if __name__ == "__main__":
   if len(sys.argv) > 1:
@@ -386,13 +208,4 @@ if __name__ == "__main__":
     name = "WRONG2"
   p = read(name)
 
-  print("backtrack count: ", p.backtrack_count)
-  # print_tree()
-  # instantiation_histogram()
-
-  max_depth = 0
-  for l in MetaVariable.all.values():
-    for m in l:
-      if m.depth is not None:
-        max_depth = max(max_depth, m.depth)
-  print("max_depth: ", max_depth)
+  print("backtrack count:", p.backtrack_count)
