@@ -116,9 +116,13 @@ class MetaVariable:
     self.active_run = None
     self.runs = []
 
-    generations = MetaVariable.all.setdefault(self.idx, [])
-    generations.append(self)
-    self.generation = len(generations)
+    if self.idx in MetaVariable.all:
+      l = MetaVariable.all[self.idx]
+      self.generation = len(l)
+      l.append(self)
+    else:
+      MetaVariable.all[self.idx] = [self]
+      self.generation = 0
 
   def set(self, instance):
     if not self.active_run:
@@ -160,6 +164,10 @@ class MetaVariable:
     assert(self.idx not in MetaVariable.active_mvars)
     MetaVariable.active_mvars[self.idx] = self
 
+  def mark_success(self):
+    if self.active_instance:
+      self.active_instance.mark_success()
+
   def non_failed_runs(self):
     for (l, r) in self.runs:
       pass
@@ -180,15 +188,17 @@ class MetaVariable:
       if r is not None:
         print("%6i: %s backtracking %s by %s" % (r.line, prefix, self.idx, r))
 
-  def __str__(self):
+  def get_name(self):
     if self.generation == 0:
-      name = "?x_%i" % sefl.idx
+      return "?x_%i" % self.idx
     else:
-      name = "?x_%i.i" % (sefl.idx, self.generation)
+      return "?x_%i.%i" % (self.idx, self.generation)
+
+  def __str__(self):
     if self.type:
-      return "[%s : %s]" % (name, self.type)
+      return "[%s : %s]" % (self.get_name(), self.type)
     else:
-      return name
+      return self.get_name()
 
   def collect(self, instantiations):
     for (l, r) in self.runs:
@@ -234,6 +244,8 @@ class Instantiation:
     self.type = type
     self.value = value
 
+    self.success = False
+
     self.failure_reason = None
 
     const_name = self.value.split()[0]
@@ -253,6 +265,13 @@ class Instantiation:
     self.failure_reason = reason
     for m in self.mvars:
       m.deactivate(reason)
+
+  def mark_success(self):
+    if self.success: return
+
+    self.success = True
+    for v in self.mvars:
+      v.mark_success()
 
   def collect(self, instantiations):
     if self.failure_reason and self.failure_reason.is_def_eq():
@@ -279,6 +298,7 @@ class Instantiation:
 class ContextParser(Parser):
   def __init__(self):
     self.last_instance = None
+    self.backtrack_count = 0
 
   def apply_instance(self, ln, d, m, l, t, v):
     m = MetaVariable.active_mvars[m]
@@ -288,12 +308,21 @@ class ContextParser(Parser):
     # add backtracking information
     if m.active_instance:
       m.deactivate_instance(Replacement(i))
+      backtracked = False
       while m.parent:
         parent = m.parent
         pos = parent.mvars.index(m)
         for sibling in parent.mvars[pos + 1:]:
           sibling.backtrack(i)
+          backtracked = True
         m = parent.target
+      if backtracked:
+        self.backtrack_count += 1
+
+    if m.parent:
+      for v in m.parent.mvars:
+        if v == m: break
+        v.mark_success()
 
     # add active mvars
     i.activate()
@@ -326,8 +355,9 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     name = sys.argv[1]
   else:
-    name = "WRONG"
+    name = "WRONG2"
   p = read(name)
 
-  # print_tree()
-  instantiation_histogram()
+  print("backtrack count: ", p.backtrack_count)
+  print_tree()
+  # instantiation_histogram()
