@@ -1,4 +1,29 @@
 #!/usr/bin/python3
+""" Analyse type class instance logs of the Lean theorem prover 3.4.2
+
+The general idea is to perform a backtracking search to find in proofs / terms of the following
+form:
+
+  ?x_0 : C p1 ... pn
+
+where ?x_0 is a metavariable, `C` is the name of a class, and `p1` ... `pn` are parameters. Lean
+goes through its database of possible instances for each class `C`:
+  `I1 : C1 ... -> ... -> Cn ... -> C t1 ... tn`
+For this instance to apply `C t1 ... tn` needs to unify with the type `C p1 ... pn`, if they unify
+the type class search is continued with `?x_1 : C1 ...` to `?x_n : Cn ...`. If no matching instance
+is found, the search backtracks to a previous meta variable to try a different instance.
+
+The log analysed by this program is activated with the following option:
+> set_option trace.class_instances true
+> set_option pp.proofs true
+
+The program also parses the log when the following option is acitvated:
+> set_option trace.type_context.tmp_vars true
+But the meta variables instantiations are currently not analysed.
+
+"""
+__author__ = "Johannes Hölzl <johannes.hoelzl@posteo.de>"
+
 import re
 from collections import OrderedDict
 import sys
