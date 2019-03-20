@@ -146,6 +146,8 @@ class MetaVariable:
       return self.get_name()
 
 class Instantiation:
+  all = []
+
   def __init__(self, line, depth, target, locals, type, value):
     self.line = line
     self.target = target
@@ -156,6 +158,8 @@ class Instantiation:
 
     self.def_eq_failure = False
 
+    self.backtracked_by = None
+
     const_name = self.value.split()[0]
     if const_name.startswith("@"):
       const_name = const_name[1:]
@@ -164,14 +168,20 @@ class Instantiation:
     self.mvars = [MetaVariable(self, int (i))
       for i in mvar_regex.findall(self.value)]
 
+    Instantiation.all.append(self)
+
+  def print(self):
+    print("[% 6i]%s %s" % (self.line, "  " * self.depth, self))
+
   def __str__(self):
-    return "%s := %s" % (self.target.get_name(), self.const_name)
+    return "%s := %s" % (self.target, self.value)
 
 class ContextParser(Parser):
   def __init__(self):
     self.instances = OrderedDict()
     self.vars = { 0: MetaVariable(None, 0) }
     self.backtrack_histogram = {}
+    self.last = None
 
   def pop_instance(self):
     elem = self.instances.popitem()
@@ -188,7 +198,11 @@ class ContextParser(Parser):
 
     if target.idx in self.instances:
       backsteps = 0
-      while self.pop_instance()[0] != target.idx:
+      (v, i) = self.pop_instance()
+      i.backtracked_by = new_instance
+      while v != target.idx:
+        (v, i) = self.pop_instance()
+        i.backtracked_by = new_instance
         backsteps += 1
       cnt = self.backtrack_histogram.setdefault(backsteps, 0)
       self.backtrack_histogram[backsteps] = cnt + 1
@@ -199,12 +213,16 @@ class ContextParser(Parser):
     for m in new_instance.mvars:
       self.vars[m.idx] = m
 
-  def apply_failed(self, ln):
-    self.pop_instance()[1].def_eq_failure = True
+    self.last = new_instance
 
-def print_instantiation(ctxt):
-  for inst in ctxt.instances.values():
-    print("[% 6i] %s" % (inst.line, inst))
+  def apply_failed(self, ln):
+    self.last.def_eq_failure = True
+
+def print_instantiation(depth=10):
+  for inst in Instantiation.all:
+    if inst.def_eq_failure: continue
+    if inst.depth > depth: continue
+    inst.print()
 
 def print_mvar_tree(mvar, prefix="", depth=1):
   for inst in mvar.instances:
@@ -231,7 +249,7 @@ if __name__ == "__main__":
   # i.sort(key = lambda p: p[0])
   # print("backtrack count:", i)
 
-  # print_instantiation(p)
+  print_instantiation(10)
 
-  v = MetaVariable.all[116][0]
-  print_mvar_tree(v)
+  # v = MetaVariable.all[0][0]
+  # print_mvar_tree(v, depth=6)
