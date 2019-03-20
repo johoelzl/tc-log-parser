@@ -115,6 +115,8 @@ class MetaVariable:
     self.generation = len(l)
     l.append(self)
 
+    self.instances = []
+
   def set(self, instance):
     if self.depth is None:
       self.depth = instance.depth
@@ -128,6 +130,8 @@ class MetaVariable:
       self.locals = instance.locals
     else:
       assert(self.locals == instance.locals)
+
+    self.instances.append(instance)
 
   def get_name(self):
     if self.generation == 0:
@@ -161,7 +165,7 @@ class Instantiation:
       for i in mvar_regex.findall(self.value)]
 
   def __str__(self):
-    return "?x_%i := %s" % (self.target.get_name(), self.const_name)
+    return "%s := %s" % (self.target.get_name(), self.const_name)
 
 class ContextParser(Parser):
   def __init__(self):
@@ -198,6 +202,18 @@ class ContextParser(Parser):
   def apply_failed(self, ln):
     self.pop_instance()[1].def_eq_failure = True
 
+def print_instantiation(ctxt):
+  for inst in ctxt.instances.values():
+    print("[% 6i] %s" % (inst.line, inst))
+
+def print_mvar_tree(mvar, prefix="", depth=1):
+  for inst in mvar.instances:
+    if inst.def_eq_failure: continue
+    print("[% 7i]%s %s" % (inst.line, prefix, inst))
+    if depth == 0: continue
+    for mv in inst.mvars:
+      print_mvar_tree(mv, prefix + "  ", depth - 1)
+
 def read(name):
   f = open(name)
   p = ContextParser()
@@ -208,9 +224,14 @@ if __name__ == "__main__":
   if len(sys.argv) > 1:
     name = sys.argv[1]
   else:
-    name = "WRONG2"
+    name = "WRONG"
   p = read(name)
 
-  i = list(p.backtrack_histogram.items())
-  i.sort(key = lambda p: p[0])
-  print("backtrack count:", i)
+  # i = list(p.backtrack_histogram.items())
+  # i.sort(key = lambda p: p[0])
+  # print("backtrack count:", i)
+
+  # print_instantiation(p)
+
+  v = MetaVariable.all[116][0]
+  print_mvar_tree(v)
