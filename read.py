@@ -171,7 +171,7 @@ class Instantiation:
     Instantiation.all.append(self)
 
   def print(self):
-    print("[% 6i]%s %s" % (self.line, "  " * self.depth, self))
+    print("[%7i]%s %s" % (self.line, "  " * self.depth, self))
 
   def __str__(self):
     return "%s := %s" % (self.target, self.value)
@@ -189,9 +189,17 @@ class ContextParser(Parser):
       del self.vars[m.idx]
     return elem
 
+  def print_term(self):
+    for i in self.instances.values():
+      i.print()
+
   def apply_instance(self, ln, d, m, l, t, v):
     target = self.vars[m]
     new_instance = Instantiation(ln, d, target, l, t, v)
+
+    if v == "mark_tt":
+      print("mark")
+      self.print_term()
 
     if target.parent:
       assert(target.parent.target.idx in self.instances)
@@ -244,12 +252,5 @@ if __name__ == "__main__":
   else:
     name = "WRONG"
   p = read(name)
-
-  # i = list(p.backtrack_histogram.items())
-  # i.sort(key = lambda p: p[0])
-  # print("backtrack count:", i)
-
-  print_instantiation(10)
-
-  # v = MetaVariable.all[0][0]
-  # print_mvar_tree(v, depth=6)
+  print("last")
+  p.print_term()

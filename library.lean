@@ -6,13 +6,33 @@ import topology.instances.nnreal
 
 import analysis.normed_space.basic
 
-section
-parameters {α : Type} [fintype α] [discrete_field α] (n : ℕ) (A : finset (fin n → α))
-parameter B : matrix {x // x ∈ A} {x // x ∈ A} α
+class test (α : Type*)
+
+class mark (b : bool)
+
+instance test_init (α : Type*) [decidable_eq α] [mark ff] :
+  test α :=
+test.mk _
+
+instance mark_tt : mark tt := mark.mk _
 
 set_option trace.class_instances true
--- set_option trace.type_context.tmp_vars  true
 set_option pp.proofs true
-#check rank B.to_lin
 
+example {α : Type} [fintype α] [discrete_field α] (n : ℕ) (A : finset (fin n → α)) :
+  test (fin n) :=
+begin
+  tactic.trace "pre",
+  apply_instance
 end
+
+/-
+instance t₁ (α : Type*) (x : α) (A : finset α) [decidable_eq α] [inhabited empty] :
+  test {x // x ∈ A} :=
+test.mk _
+
+
+example {α : Type} [fintype α] [discrete_field α] (n : ℕ) (A : finset (fin n → α)) :
+  normed_group (Π (i : {x // x ∈ A}), (λ (a : {x // x ∈ A}), α) i) :=
+-- by apply_instance
+-/
