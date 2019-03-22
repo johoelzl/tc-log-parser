@@ -16,6 +16,7 @@ is found, the search backtracks to a previous meta variable to try a different i
 The log analysed by this program is activated with the following option:
 > set_option trace.class_instances true
 > set_option pp.proofs true
+Then cut out the "[class_instances] ... " parts.
 
 The program also parses the log when the following option is acitvated:
 > set_option trace.type_context.tmp_vars true

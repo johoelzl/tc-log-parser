@@ -1,0 +1,98 @@
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    230]   [?x_2 : decidable (a = b)] := fin.decidable_eq (?x_396 a b) (?x_397 a b) (?x_398 a b)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    316]   [?x_2 : decidable (a = b)] := @eq.decidable (?x_4 a b) (?x_5 a b) (?x_6 a b) (?x_7 a b)
+[    359]     [?x_5.2 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_10 a b)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   1141]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_inf.to_partial_order (?x_17 a b) (?x_18 a b)
+[   1294]       [?x_18.6 : lattice.semilattice_inf (fin n)] := @lattice.lattice.to_semilattice_inf (?x_25 a b) (?x_26 a b)
+[   1433]         [?x_26.15 : lattice.lattice (fin n)] := @lattice.lattice_of_decidable_linear_order (?x_33 a b) (?x_34 a b)
+[   1476]           [?x_34.23 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_37 a b)
+[   1758]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @fin.decidable_le (?x_433 a b a_1 b_1) (?x_434 a b a_1 b_1) (?x_435 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   1141]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_inf.to_partial_order (?x_17 a b) (?x_18 a b)
+[   1294]       [?x_18.6 : lattice.semilattice_inf (fin n)] := @lattice.lattice.to_semilattice_inf (?x_25 a b) (?x_26 a b)
+[   1433]         [?x_26.15 : lattice.lattice (fin n)] := @lattice.lattice_of_decidable_linear_order (?x_33 a b) (?x_34 a b)
+[   1476]           [?x_34.23 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_37 a b)
+[   1837]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @has_le.le.decidable (?x_154 a b a_1 b_1) (?x_155 a b a_1 b_1) (?x_156 a b a_1 b_1) (?x_157 a b a_1 b_1)
+[   1880]       [?x_155.2 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_160 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   1141]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_inf.to_partial_order (?x_17 a b) (?x_18 a b)
+[   1294]       [?x_18.6 : lattice.semilattice_inf (fin n)] := @lattice.lattice.to_semilattice_inf (?x_25 a b) (?x_26 a b)
+[   2005]         [?x_26.15 : lattice.lattice (fin n)] := @lattice.distrib_lattice.to_lattice (?x_27 a b) (?x_28 a b)
+[   2041]           [?x_28.16 : lattice.distrib_lattice (fin n)] := @lattice.distrib_lattice_of_decidable_linear_order (?x_35 a b) (?x_36 a b)
+[   2084]             [?x_36.35 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_39 a b)
+[   2366]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @fin.decidable_le (?x_435 a b a_1 b_1) (?x_436 a b a_1 b_1) (?x_437 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   1141]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_inf.to_partial_order (?x_17 a b) (?x_18 a b)
+[   1294]       [?x_18.6 : lattice.semilattice_inf (fin n)] := @lattice.lattice.to_semilattice_inf (?x_25 a b) (?x_26 a b)
+[   2005]         [?x_26.15 : lattice.lattice (fin n)] := @lattice.distrib_lattice.to_lattice (?x_27 a b) (?x_28 a b)
+[   2041]           [?x_28.16 : lattice.distrib_lattice (fin n)] := @lattice.distrib_lattice_of_decidable_linear_order (?x_35 a b) (?x_36 a b)
+[   2084]             [?x_36.35 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_39 a b)
+[   2445]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @has_le.le.decidable (?x_156 a b a_1 b_1) (?x_157 a b a_1 b_1) (?x_158 a b a_1 b_1) (?x_159 a b a_1 b_1)
+[   2488]       [?x_157.4 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_162 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   2613]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_sup.to_partial_order (?x_17 a b) (?x_18 a b)
+[   2768]       [?x_18.7 : lattice.semilattice_sup (fin n)] := @lattice.lattice.to_semilattice_sup (?x_25 a b) (?x_26 a b)
+[   2907]         [?x_26.18 : lattice.lattice (fin n)] := @lattice.lattice_of_decidable_linear_order (?x_33 a b) (?x_34 a b)
+[   2950]           [?x_34.34 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_37 a b)
+[   3232]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @fin.decidable_le (?x_433 a b a_1 b_1) (?x_434 a b a_1 b_1) (?x_435 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   2613]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_sup.to_partial_order (?x_17 a b) (?x_18 a b)
+[   2768]       [?x_18.7 : lattice.semilattice_sup (fin n)] := @lattice.lattice.to_semilattice_sup (?x_25 a b) (?x_26 a b)
+[   2907]         [?x_26.18 : lattice.lattice (fin n)] := @lattice.lattice_of_decidable_linear_order (?x_33 a b) (?x_34 a b)
+[   2950]           [?x_34.34 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_37 a b)
+[   3311]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @has_le.le.decidable (?x_154 a b a_1 b_1) (?x_155 a b a_1 b_1) (?x_156 a b a_1 b_1) (?x_157 a b a_1 b_1)
+[   3354]       [?x_155.6 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_160 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   2613]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_sup.to_partial_order (?x_17 a b) (?x_18 a b)
+[   2768]       [?x_18.7 : lattice.semilattice_sup (fin n)] := @lattice.lattice.to_semilattice_sup (?x_25 a b) (?x_26 a b)
+[   3479]         [?x_26.18 : lattice.lattice (fin n)] := @lattice.distrib_lattice.to_lattice (?x_27 a b) (?x_28 a b)
+[   3515]           [?x_28.22 : lattice.distrib_lattice (fin n)] := @lattice.distrib_lattice_of_decidable_linear_order (?x_35 a b) (?x_36 a b)
+[   3558]             [?x_36.55 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_39 a b)
+[   3840]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @fin.decidable_le (?x_435 a b a_1 b_1) (?x_436 a b a_1 b_1) (?x_437 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   2613]     [?x_13.7 : partial_order (fin n)] := @lattice.semilattice_sup.to_partial_order (?x_17 a b) (?x_18 a b)
+[   2768]       [?x_18.7 : lattice.semilattice_sup (fin n)] := @lattice.lattice.to_semilattice_sup (?x_25 a b) (?x_26 a b)
+[   3479]         [?x_26.18 : lattice.lattice (fin n)] := @lattice.distrib_lattice.to_lattice (?x_27 a b) (?x_28 a b)
+[   3515]           [?x_28.22 : lattice.distrib_lattice (fin n)] := @lattice.distrib_lattice_of_decidable_linear_order (?x_35 a b) (?x_36 a b)
+[   3558]             [?x_36.55 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_39 a b)
+[   3919]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @has_le.le.decidable (?x_156 a b a_1 b_1) (?x_157 a b a_1 b_1) (?x_158 a b a_1 b_1) (?x_159 a b a_1 b_1)
+[   3962]       [?x_157.8 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_162 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   4356]     [?x_13.7 : partial_order (fin n)] := @linear_order.to_partial_order (?x_17 a b) (?x_18 a b)
+[   4475]       [?x_18.10 : linear_order (fin n)] := @decidable_linear_order.to_linear_order (?x_19 a b) (?x_20 a b)
+[   4518]         [?x_20.21 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_23 a b)
+[   4799]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @fin.decidable_le (?x_419 a b a_1 b_1) (?x_420 a b a_1 b_1) (?x_421 a b a_1 b_1)
+mark
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[    421]   [?x_2 : decidable (a = b)] := @decidable_eq_of_decidable_le (?x_12 a b) (?x_13 a b) (?x_14 a b) (?x_15 a b) (?x_16 a b)
+[   4356]     [?x_13.7 : partial_order (fin n)] := @linear_order.to_partial_order (?x_17 a b) (?x_18 a b)
+[   4475]       [?x_18.10 : linear_order (fin n)] := @decidable_linear_order.to_linear_order (?x_19 a b) (?x_20 a b)
+[   4518]         [?x_20.21 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_23 a b)
+[   4878]     [?x_14.5 : decidable (a_1 ≤ b_1)] := @has_le.le.decidable (?x_140 a b a_1 b_1) (?x_141 a b a_1 b_1) (?x_142 a b a_1 b_1) (?x_143 a b a_1 b_1)
+[   4921]       [?x_141.10 : decidable_linear_order (fin n)] := @fin.decidable_linear_order (?x_146 a b a_1 b_1)
+last
+[      1] [?x_0 : test (fin n)] := @test_init ?x_1 ?x_2 ?x_3
+[   5048]   [?x_2 : decidable (a = b)] := @decidable_eq_of_subsingleton (?x_9 a b) (?x_10 a b) (?x_11 a b) (?x_12 a b)
+[   5078]     [?x_10.8 : subsingleton (fin n)] := subsingleton_prop (?x_17 a b)
