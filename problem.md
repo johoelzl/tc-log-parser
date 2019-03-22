@@ -43,4 +43,33 @@ Unfortunately this requires changes to Lean itself.
 How does type class search work?
 ---
 
-tbd
+The general idea is to perform a backtracking search to find in proofs / terms of the following
+form:
+
+```
+  ?x_0 : C p1 ... pn
+```
+
+where `?x_0` is a metavariable, `C` is the name of a class, and `p1` ... `pn` are parameters.
+
+Lean goes through its database of possible instances for each class `C`, e.g.
+```
+  I1 : C1 ... → ... → Cn ... → C t1 ... tn
+```
+For this instance to apply, `C t1 ... tn` needs to unify with the type `C p1 ... pn`, if they unify the type class search is continued with `?x_1 : C1 ...` to `?x_n : Cn ...`. If no matching instance is found, the search backtracks to a previous meta variable to try a different instance.
+
+Now let's assume the instance search constructed the partial term:
+
+```
+?x_0 : C ... := I₁ ?x_1 ?x_2
+  ?x_1 : D ... := I₂ ?x_3 ?x_4
+    ?x_3 : E ... := ...
+    ?x_4 : F ... := ...
+  ?x_2 : G ....
+```
+
+Now we look up instances for `?x_2`. I this succeeds we are finished. If it fails, then Lean will go back to `?x_4` and lookup the next one, if this fails then `?x_3`, `?x_1` and `?x_0`. Each time a meta variable `?x` is instantiated and the next meta variable is filled in, a choice point is created for `?x`. This means that at the time `?x_2` is filled in we have choice points for `?x_0`, `?x_1`, `?x_3`, and `?x_4`. Even if there are no further unifyable instances for these meta variables.
+
+Note that the option `class.instance_max_depth` is the number of possible choice points, i.e. the size of the constructed term.
+
+This is different from the number shown in the `class_instance` log output is the depth of the term, where `?x_0` has 0, `?x_1` and `?x_2` have 1, and `?x_3` and `?x_4` have 2.
